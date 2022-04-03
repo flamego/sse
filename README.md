@@ -38,9 +38,8 @@ import (
 	"time"
 
 	"github.com/flamego/flamego"
+	"github.com/flamego/sse"
 	"github.com/flamego/template"
-
-	"sse"
 )
 
 var bulletins = []string{"Hello Flamego!", "Flamingo? No, Flamego!", "Most powerful routing syntax", "Slim core but limitless extensibility"}
