@@ -66,16 +66,6 @@ func newOptions(opts []Options) Options {
 	return opts[0]
 }
 
-// startTicker starts the ticker used for pinging the client.
-func (c *connection) startTicker() {
-	c.ticker = time.NewTicker(c.PingInterval)
-}
-
-// stopTicker stop the ticker used for pinging the client.
-func (c *connection) stopTicker() {
-	c.ticker.Stop()
-}
-
 func (c *connection) write(msg string) {
 	_, _ = c.context.ResponseWriter().Write([]byte(msg))
 }
@@ -91,8 +81,9 @@ const (
 )
 
 func (c *connection) handle() {
-	c.startTicker()
-	defer func() { c.stopTicker() }()
+	// Starts the ticker used for pinging the client.
+	c.ticker = time.NewTicker(c.PingInterval)
+	defer func() { c.ticker.Stop() }()
 
 	c.write(": ping\n\n")
 	c.write("events: stream opened\n\n")
