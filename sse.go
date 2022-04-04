@@ -19,6 +19,7 @@ const (
 
 type Options struct {
 	// PingInterval is the time to wait between sending pings to the client.
+	// Default is 10 seconds.
 	PingInterval time.Duration
 }
 
@@ -104,11 +105,10 @@ func (c *Connection) handle() {
 	cases[tickerTick] = reflect.SelectCase{Dir: reflect.SelectRecv, Chan: reflect.ValueOf(c.ticker.C), Send: reflect.ValueOf(nil)}
 	cases[timeout] = reflect.SelectCase{Dir: reflect.SelectRecv, Chan: reflect.ValueOf(time.After(time.Hour)), Send: reflect.ValueOf(nil)}
 
-L:
+loop:
 	for {
 		chosen, message, ok := reflect.Select(cases)
 		switch chosen {
-
 		case senderSend:
 			if !ok {
 				// Sender channel has been closed.
