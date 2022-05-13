@@ -8,13 +8,32 @@ import (
 	"bytes"
 	"net/http"
 	"net/http/httptest"
+	"sync"
 	"testing"
 	"time"
 
-	"github.com/flamego/flamego"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/flamego/flamego"
 )
+
+type mockResponseWriter struct {
+	lock sync.Mutex
+	*httptest.ResponseRecorder
+}
+
+func (m *mockResponseWriter) Write(buf []byte) (int, error) {
+	m.lock.Lock()
+	defer m.lock.Unlock()
+	return m.ResponseRecorder.Write(buf)
+}
+
+func (m *mockResponseWriter) Body() *bytes.Buffer {
+	m.lock.Lock()
+	defer m.lock.Unlock()
+	return m.ResponseRecorder.Body
+}
 
 func TestBind(t *testing.T) {
 	f := flamego.NewWithLogger(&bytes.Buffer{})
@@ -46,7 +65,9 @@ func TestBind(t *testing.T) {
 	)
 
 	t.Run("normal", func(t *testing.T) {
-		resp := httptest.NewRecorder()
+		resp := &mockResponseWriter{
+			ResponseRecorder: httptest.NewRecorder(),
+		}
 		req, err := http.NewRequest(http.MethodGet, "/normal", nil)
 		require.NoError(t, err)
 
@@ -64,11 +85,13 @@ events: stream opened
 data: {"Message":"Flamego"}
 
 `
-		assert.Equal(t, wantBody, resp.Body.String())
+		assert.Equal(t, wantBody, resp.Body().String())
 	})
 
 	t.Run("ping", func(t *testing.T) {
-		resp := httptest.NewRecorder()
+		resp := &mockResponseWriter{
+			ResponseRecorder: httptest.NewRecorder(),
+		}
 		req, err := http.NewRequest(http.MethodGet, "/ping", nil)
 		require.NoError(t, err)
 
@@ -93,6 +116,6 @@ data: {"Message":"Flamego"}
 : ping
 
 `
-		assert.Equal(t, wantBody, resp.Body.String())
+		assert.Equal(t, wantBody, resp.Body().String())
 	})
 }
