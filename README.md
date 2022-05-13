@@ -57,7 +57,7 @@ func main() {
 		t.HTML(http.StatusOK, "index")
 	})
 
-	f.Get("/bulletin", sse.Handler(bulletin{}), func(msg chan<- *bulletin) {
+	f.Get("/bulletin", sse.Bind(bulletin{}), func(msg chan<- *bulletin) {
 		for {
 			select {
 			case <-time.Tick(1 * time.Second):
@@ -76,9 +76,7 @@ func main() {
 ## Getting help
 
 - Read [documentation and examples](https://flamego.dev/middleware/sse.html).
-- Please [file an issue](https://github.com/flamego/flamego/issues)
-  or [start a discussion](https://github.com/flamego/flamego/discussions) on
-  the [flamego/flamego](https://github.com/flamego/flamego) repository.
+- Please [file an issue](https://github.com/flamego/flamego/issues) or [start a discussion](https://github.com/flamego/flamego/discussions) on the [flamego/flamego](https://github.com/flamego/flamego) repository.
 
 ## License
 

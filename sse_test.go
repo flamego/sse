@@ -16,25 +16,34 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestHandler(t *testing.T) {
+func TestBind(t *testing.T) {
 	f := flamego.NewWithLogger(&bytes.Buffer{})
 
-	type bind struct {
+	type object struct {
 		Message string
 	}
 
-	f.Get("/normal", Handler(bind{}), func(msg chan<- *bind) {
-		msg <- &bind{Message: "Flamego"}
-		// Sleep for the response flushed.
-		time.Sleep(1 * time.Second)
-	})
-	f.Get("/ping", Handler(bind{}, Options{
-		300 * time.Millisecond, // Sleep for 1 second, so we can get 3 pings.
-	}), func(msg chan<- *bind) {
-		msg <- &bind{Message: "Flamego"}
-		// Sleep for the response flushed.
-		time.Sleep(1 * time.Second)
-	})
+	f.Get("/normal",
+		Bind(object{}),
+		func(msg chan<- *object) {
+			msg <- &object{Message: "Flamego"}
+			// Sleep for the response flushed.
+			time.Sleep(1 * time.Second)
+		},
+	)
+	f.Get("/ping",
+		Bind(
+			object{},
+			Options{
+				300 * time.Millisecond, // Sleep for 1 second, so we can get 3 pings.
+			},
+		),
+		func(msg chan<- *object) {
+			msg <- &object{Message: "Flamego"}
+			// Sleep for the response flushed.
+			time.Sleep(1 * time.Second)
+		},
+	)
 
 	t.Run("normal", func(t *testing.T) {
 		resp := httptest.NewRecorder()

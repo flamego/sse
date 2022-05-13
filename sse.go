@@ -13,7 +13,7 @@ import (
 	"github.com/flamego/flamego"
 )
 
-// Options contains options for the sse.Handler middleware.
+// Options contains options for the sse.Bind middleware.
 type Options struct {
 	// PingInterval is the time internal to wait between sending pings to the
 	// client. Default is 10 seconds.
@@ -29,7 +29,9 @@ type connection struct {
 	sender reflect.Value
 }
 
-func Handler(bind interface{}, opts ...Options) flamego.Handler {
+// Bind returns a middleware handler that uses the given bound object as the
+// date type for sending events.
+func Bind(obj interface{}, opts ...Options) flamego.Handler {
 	return func(c flamego.Context, log *log.Logger) {
 		c.ResponseWriter().Header().Set("Content-Type", "text/event-stream")
 		c.ResponseWriter().Header().Set("Cache-Control", "no-cache")
@@ -39,7 +41,7 @@ func Handler(bind interface{}, opts ...Options) flamego.Handler {
 		sse := &connection{
 			Options: newOptions(opts),
 			// Create a chan of the given type as a reflect.Value.
-			sender: reflect.MakeChan(reflect.ChanOf(reflect.BothDir, reflect.PtrTo(reflect.TypeOf(bind))), 0),
+			sender: reflect.MakeChan(reflect.ChanOf(reflect.BothDir, reflect.PtrTo(reflect.TypeOf(obj))), 0),
 		}
 		c.Set(reflect.ChanOf(reflect.SendDir, sse.sender.Type().Elem()), sse.sender)
 
