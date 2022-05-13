@@ -125,7 +125,7 @@ loop:
 		}
 	}
 
-	c.write("event: error\ndata: eof\n\n")
+	c.write("events: error\ndata: eof\n\n")
 	c.flush()
 	c.write("events: stream closed")
 	c.flush()

@@ -12,7 +12,7 @@ import (
 	"time"
 
 	"github.com/flamego/flamego"
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestHandler(t *testing.T) {
@@ -38,32 +38,33 @@ func TestHandler(t *testing.T) {
 	t.Run("normal", func(t *testing.T) {
 		resp := httptest.NewRecorder()
 		req, err := http.NewRequest(http.MethodGet, "/normal", nil)
-		assert.NoError(t, err)
+		require.NoError(t, err)
 
 		f.ServeHTTP(resp, req)
 
-		assert.Equal(t, resp.Code, http.StatusOK)
-		assert.Equal(t, "text/event-stream", resp.Header().Get("Content-Type"))
-		assert.Equal(t, "no-cache", resp.Header().Get("Cache-Control"))
-		assert.Equal(t, "keep-alive", resp.Header().Get("Connection"))
-		assert.Equal(t, "no", resp.Header().Get("X-Accel-Buffering"))
+		require.Equal(t, resp.Code, http.StatusOK)
+		require.Equal(t, "text/event-stream", resp.Header().Get("Content-Type"))
+		require.Equal(t, "no-cache", resp.Header().Get("Cache-Control"))
+		require.Equal(t, "keep-alive", resp.Header().Get("Connection"))
+		require.Equal(t, "no", resp.Header().Get("X-Accel-Buffering"))
 		wantBody := ": ping\n\nevents: stream opened\n\ndata: {\"Message\":\"Flamego\"}\n\n"
-		assert.Equal(t, wantBody, resp.Body.String())
+
+		require.Equal(t, wantBody, resp.Body.String())
 	})
 
 	t.Run("ping", func(t *testing.T) {
 		resp := httptest.NewRecorder()
 		req, err := http.NewRequest(http.MethodGet, "/ping", nil)
-		assert.NoError(t, err)
+		require.NoError(t, err)
 
 		f.ServeHTTP(resp, req)
 
-		assert.Equal(t, resp.Code, http.StatusOK)
-		assert.Equal(t, "text/event-stream", resp.Header().Get("Content-Type"))
-		assert.Equal(t, "no-cache", resp.Header().Get("Cache-Control"))
-		assert.Equal(t, "keep-alive", resp.Header().Get("Connection"))
-		assert.Equal(t, "no", resp.Header().Get("X-Accel-Buffering"))
+		require.Equal(t, resp.Code, http.StatusOK)
+		require.Equal(t, "text/event-stream", resp.Header().Get("Content-Type"))
+		require.Equal(t, "no-cache", resp.Header().Get("Cache-Control"))
+		require.Equal(t, "keep-alive", resp.Header().Get("Connection"))
+		require.Equal(t, "no", resp.Header().Get("X-Accel-Buffering"))
 		wantBody := ": ping\n\nevents: stream opened\n\ndata: {\"Message\":\"Flamego\"}\n\n: ping\n\n: ping\n\n: ping\n\n"
-		assert.Equal(t, wantBody, resp.Body.String())
+		require.Equal(t, wantBody, resp.Body.String())
 	})
 }
