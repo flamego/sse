@@ -59,12 +59,6 @@ func newOptions(opts []Options) Options {
 	return opts[0]
 }
 
-const (
-	senderSend = iota
-	tickerTick
-	timeout
-)
-
 func (c *connection) handle(log *log.Logger, w flamego.ResponseWriter) {
 	ticker := time.NewTicker(c.PingInterval)
 	defer func() { ticker.Stop() }()
@@ -80,6 +74,11 @@ func (c *connection) handle(log *log.Logger, w flamego.ResponseWriter) {
 	write("events: stream opened\n\n")
 	w.Flush()
 
+	const (
+		senderSend = iota
+		tickerTick
+		timeout
+	)
 	cases := make([]reflect.SelectCase, 3)
 	cases[senderSend] = reflect.SelectCase{Dir: reflect.SelectRecv, Chan: c.sender, Send: reflect.ValueOf(nil)}
 	cases[tickerTick] = reflect.SelectCase{Dir: reflect.SelectRecv, Chan: reflect.ValueOf(ticker.C), Send: reflect.ValueOf(nil)}
