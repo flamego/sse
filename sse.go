@@ -50,9 +50,9 @@ func Handler(bind interface{}, opts ...Options) flamego.Handler {
 		}
 		ctx.Set(reflect.ChanOf(reflect.SendDir, sse.sender.Type().Elem()), sse.sender)
 
+		ctx.ResponseWriter().WriteHeader(http.StatusOK)
 		go sse.handle()
 
-		ctx.Next()
 	}
 }
 
