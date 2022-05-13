@@ -29,10 +29,10 @@ func (m *mockResponseWriter) Write(buf []byte) (int, error) {
 	return m.ResponseRecorder.Write(buf)
 }
 
-func (m *mockResponseWriter) Body() *bytes.Buffer {
+func (m *mockResponseWriter) Body() string {
 	m.lock.Lock()
 	defer m.lock.Unlock()
-	return m.ResponseRecorder.Body
+	return m.ResponseRecorder.Body.String()
 }
 
 func TestBind(t *testing.T) {
@@ -85,7 +85,7 @@ events: stream opened
 data: {"Message":"Flamego"}
 
 `
-		assert.Equal(t, wantBody, resp.Body().String())
+		assert.Equal(t, wantBody, resp.Body())
 	})
 
 	t.Run("ping", func(t *testing.T) {
@@ -116,6 +116,6 @@ data: {"Message":"Flamego"}
 : ping
 
 `
-		assert.Equal(t, wantBody, resp.Body().String())
+		assert.Equal(t, wantBody, resp.Body())
 	})
 }
