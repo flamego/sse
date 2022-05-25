@@ -1,4 +1,4 @@
-module sse
+module github.com/flamego/sse
 
 go 1.16
 
