@@ -9,7 +9,7 @@ Package sse is a middleware that provides Server-Sent Events for [Flamego](https
 
 ## Installation
 
-The minimum requirement of Go is **1.16**.
+The minimum requirement of Go is **1.18**.
 
 	go get github.com/flamego/sse
 
