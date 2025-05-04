@@ -45,7 +45,7 @@ func Bind(obj interface{}, opts ...Options) flamego.Handler {
 		}
 		c.Set(reflect.ChanOf(reflect.SendDir, sse.sender.Type().Elem()), sse.sender)
 
-		go sse.handle(log, c.ResponseWriter())
+		go sse.handle(log, c)
 	}
 }
 
@@ -59,7 +59,8 @@ func newOptions(opts []Options) Options {
 	return opts[0]
 }
 
-func (c *connection) handle(log *log.Logger, w flamego.ResponseWriter) {
+func (c *connection) handle(log *log.Logger, ctx flamego.Context) {
+	w := ctx.ResponseWriter()
 	ticker := time.NewTicker(c.PingInterval)
 	defer func() { ticker.Stop() }()
 
@@ -78,11 +79,13 @@ func (c *connection) handle(log *log.Logger, w flamego.ResponseWriter) {
 		senderSend = iota
 		tickerTick
 		timeout
+		closed
 	)
-	cases := make([]reflect.SelectCase, 3)
+	cases := make([]reflect.SelectCase, 4)
 	cases[senderSend] = reflect.SelectCase{Dir: reflect.SelectRecv, Chan: c.sender, Send: reflect.ValueOf(nil)}
 	cases[tickerTick] = reflect.SelectCase{Dir: reflect.SelectRecv, Chan: reflect.ValueOf(ticker.C), Send: reflect.ValueOf(nil)}
 	cases[timeout] = reflect.SelectCase{Dir: reflect.SelectRecv, Chan: reflect.ValueOf(time.After(time.Hour)), Send: reflect.ValueOf(nil)}
+	cases[closed] = reflect.SelectCase{Dir: reflect.SelectRecv, Chan: reflect.ValueOf(ctx.Request().Context().Done()), Send: reflect.ValueOf(nil)}
 
 loop:
 	for {
@@ -112,6 +115,9 @@ loop:
 			write("events: stream timeout\n\n")
 			w.Flush()
 			break loop
+
+		case closed:
+			return
 		}
 	}
 
