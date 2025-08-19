@@ -6,6 +6,7 @@ package sse
 
 import (
 	"bytes"
+	"context"
 	"net/http"
 	"net/http/httptest"
 	"sync"
@@ -63,6 +64,27 @@ func TestBind(t *testing.T) {
 			time.Sleep(1 * time.Second)
 		},
 	)
+	f.Get("/ticker",
+		Bind(
+			object{},
+			Options{
+				100 * time.Millisecond,
+			},
+		),
+		func(ctx flamego.Context, msg chan<- *object) {
+			ticker := time.NewTicker(1 * time.Second)
+			defer func() { ticker.Stop() }()
+
+			for {
+				select {
+				case <-ticker.C:
+					msg <- &object{Message: "Flamego"}
+				case <-ctx.Request().Context().Done():
+					return
+				}
+			}
+		},
+	)
 
 	t.Run("normal", func(t *testing.T) {
 		resp := &mockResponseWriter{
@@ -117,5 +139,26 @@ data: {"Message":"Flamego"}
 
 `
 		assert.Equal(t, wantBody, resp.Body())
+	})
+
+	t.Run("close connection", func(t *testing.T) {
+		server := httptest.NewServer(f)
+
+		reqContext, cancel := context.WithCancel(context.Background())
+		req, err := http.NewRequestWithContext(reqContext, http.MethodGet, server.URL+"/ticker", nil)
+		require.NoError(t, err)
+
+		// Close request connection after 1 second.
+		go func() {
+			time.Sleep(1 * time.Second)
+			cancel()
+		}()
+		resp, err := http.DefaultClient.Do(req)
+		require.NoError(t, err)
+		err = resp.Body.Close()
+		require.NoError(t, err)
+
+		// Sleep for 3 seconds to wait for new responses that may be in a closed request.
+		time.Sleep(3 * time.Second)
 	})
 }
