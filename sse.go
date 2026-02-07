@@ -45,7 +45,24 @@ func Bind(obj interface{}, opts ...Options) flamego.Handler {
 		}
 		c.Set(reflect.ChanOf(reflect.SendDir, sse.sender.Type().Elem()), sse.sender)
 
-		go sse.handle(log, c)
+		// stopCh is closed when the next handler returns, signaling handle()
+		// to stop writing to the ResponseWriter.
+		stopCh := make(chan struct{})
+		// doneCh is closed when handle() exits, allowing the handler to wait
+		// for the goroutine to fully stop before returning.
+		doneCh := make(chan struct{})
+
+		go func() {
+			defer close(doneCh)
+			sse.handle(log, c, stopCh)
+		}()
+
+		// Call the next handler(s) in the chain. When they return, signal
+		// the handle goroutine to stop, then wait for it to finish before
+		// returning control to the HTTP server.
+		c.Next()
+		close(stopCh)
+		<-doneCh
 	}
 }
 
@@ -59,7 +76,7 @@ func newOptions(opts []Options) Options {
 	return opts[0]
 }
 
-func (c *connection) handle(log *log.Logger, ctx flamego.Context) {
+func (c *connection) handle(log *log.Logger, ctx flamego.Context, stopCh <-chan struct{}) {
 	w := ctx.ResponseWriter()
 	ticker := time.NewTicker(c.PingInterval)
 	defer func() { ticker.Stop() }()
@@ -80,12 +97,14 @@ func (c *connection) handle(log *log.Logger, ctx flamego.Context) {
 		tickerTick
 		timeout
 		closed
+		stopped
 	)
-	cases := make([]reflect.SelectCase, 4)
+	cases := make([]reflect.SelectCase, 5)
 	cases[senderSend] = reflect.SelectCase{Dir: reflect.SelectRecv, Chan: c.sender, Send: reflect.ValueOf(nil)}
 	cases[tickerTick] = reflect.SelectCase{Dir: reflect.SelectRecv, Chan: reflect.ValueOf(ticker.C), Send: reflect.ValueOf(nil)}
 	cases[timeout] = reflect.SelectCase{Dir: reflect.SelectRecv, Chan: reflect.ValueOf(time.After(time.Hour)), Send: reflect.ValueOf(nil)}
 	cases[closed] = reflect.SelectCase{Dir: reflect.SelectRecv, Chan: reflect.ValueOf(ctx.Request().Context().Done()), Send: reflect.ValueOf(nil)}
+	cases[stopped] = reflect.SelectCase{Dir: reflect.SelectRecv, Chan: reflect.ValueOf(stopCh), Send: reflect.ValueOf(nil)}
 
 loop:
 	for {
@@ -117,6 +136,9 @@ loop:
 			break loop
 
 		case closed:
+			return
+
+		case stopped:
 			return
 		}
 	}
