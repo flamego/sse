@@ -41,7 +41,7 @@ func Bind(obj interface{}, opts ...Options) flamego.Handler {
 		sse := &connection{
 			Options: newOptions(opts),
 			// Create a chan of the given type as a reflect.Value.
-			sender: reflect.MakeChan(reflect.ChanOf(reflect.BothDir, reflect.PtrTo(reflect.TypeOf(obj))), 0),
+			sender: reflect.MakeChan(reflect.ChanOf(reflect.BothDir, reflect.PtrTo(reflect.TypeOf(obj))), 0), //nolint:govet // reflect.PointerTo requires Go 1.20
 		}
 		c.Set(reflect.ChanOf(reflect.SendDir, sse.sender.Type().Elem()), sse.sender)
 
