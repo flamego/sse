@@ -1,6 +1,6 @@
 module github.com/flamego/sse
 
-go 1.18
+go 1.20
 
 require (
 	github.com/flamego/flamego v1.9.7
