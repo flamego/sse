@@ -31,7 +31,7 @@ type connection struct {
 
 // Bind returns a middleware handler that uses the given bound object as the
 // date type for sending events.
-func Bind(obj interface{}, opts ...Options) flamego.Handler {
+func Bind(obj any, opts ...Options) flamego.Handler {
 	return func(c flamego.Context, log *log.Logger) {
 		c.ResponseWriter().Header().Set("Content-Type", "text/event-stream")
 		c.ResponseWriter().Header().Set("Cache-Control", "no-cache")
